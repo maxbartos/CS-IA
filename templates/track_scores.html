@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Track Scores</h2>
+<form method="POST">
+    <label for="player1_score">Player 1 Score:</label>
+    <input type="number" name="player1_score" required>
+    
+    <label for="player2_score">Player 2 Score:</label>
+    <input type="number" name="player2_score" required>
+    
+    <button type="submit">Update Scores</button>
+</form>
+{% endblock %}
