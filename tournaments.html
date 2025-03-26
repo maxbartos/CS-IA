@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tournaments - TripleOut</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        let selectedStyle = "";
+        let selectedGameMode = "";
+
+        function toggleSection(section) {
+            const buttons = document.querySelectorAll('nav button');
+            buttons.forEach(button => button.classList.remove('selected'));
+
+            document.getElementById('playingTournaments').style.display = section === 'playing' ? 'block' : 'none';
+            document.getElementById('hostingTournaments').style.display = section === 'hosting' ? 'block' : 'none';
+            document.getElementById('tournamentStyle').style.display = section === 'style' ? 'block' : 'none';
+            document.getElementById('gameMode').style.display = section === 'gameMode' ? 'block' : 'none';
+            document.getElementById('tournamentName').style.display = section === 'name' ? 'block' : 'none';
+            document.getElementById('tournamentDetails').style.display = section === 'details' ? 'block' : 'none';
+
+            if (section !== 'style' && section !== 'gameMode' && section !== 'details' && section !== 'name') {
+                const selectedButton = document.getElementById(section + 'Button');
+                selectedButton.classList.add('selected');
+            }
+        }
+
+        function selectTournamentStyle(style) {
+            selectedStyle = style;
+
+            const styleButtons = document.querySelectorAll('.style-button');
+            styleButtons.forEach(button => button.classList.remove('selected'));
+            document.getElementById(style + 'Button').classList.add('selected');
+
+            document.getElementById('nextStyle').disabled = false;
+        }
+
+        function selectGameMode(gameMode) {
+            selectedGameMode = gameMode;
+
+            const gameModeButtons = document.querySelectorAll('.game-mode-button');
+            gameModeButtons.forEach(button => button.classList.remove('selected'));
+            document.getElementById(gameMode + 'Button').classList.add('selected');
+
+            document.getElementById('nextGameMode').disabled = false;
+        }
+
+        function validateTournamentName() {
+            const name = document.getElementById('tournamentNameInput').value.trim();
+            document.getElementById('nextName').disabled = name.length === 0;
+        }
+
+        function showDetails() {
+            const name = document.getElementById('tournamentNameInput').value;
+            const style = selectedStyle;
+            const gameMode = selectedGameMode;
+
+            document.getElementById('selectedName').textContent = name;
+            document.getElementById('selectedStyle').textContent = style;
+            document.getElementById('selectedGameMode').textContent = gameMode;
+
+            document.getElementById('finalName').value = name;
+            document.getElementById('finalStyle').value = style;
+            document.getElementById('finalGameMode').value = gameMode;
+
+            toggleSection('details');
+        }
+
+    function validateCodeInput() {
+        const input = document.getElementById('tournamentCodeInput').value.trim();
+        const enterButton = document.getElementById('enterButton');
+        const hiddenField = document.getElementById('tournamentCodeHidden');
+
+        // Enable the button only if the input is exactly 6 digits
+        if (/^\d{6}$/.test(input)) {
+            enterButton.disabled = false;
+            hiddenField.value = input; // Update the hidden field
+        } else {
+            enterButton.disabled = true;
+            hiddenField.value = ""; // Clear the hidden field
+        }
+    }
+    
+    </script>
+</head>
+<body>
+    <header>
+        <a href="{{ url_for('home') }}" class="back-button" style="height: 30px; margin-left: 5px; margin-top:10px ;text-decoration: none;">
+            Home
+        </a>        
+        <h1>Tournaments</h1>
+        <nav>
+            <button id="playingButton" onclick="toggleSection('playing')" class="selected" style="margin-top:20px; width: 450px; height: 50px">Playing Tournaments</button>
+            <button id="hostingButton" onclick="toggleSection('hosting')" style="width: 450px; height: 50px">Hosting Tournaments</button>
+        </nav>
+    </header>
+    <main>
+        <!-- Playing Tournaments Section -->
+        <section id="playingTournaments" style="display: block;">
+            <h2>Playing Tournaments</h2>
+            {% if playing_tournaments %}
+                <ul>
+                    {% for tournament in playing_tournaments %}
+                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444;">
+                            <div>
+                                <strong>{{ tournament[1] }}</strong> ({{ tournament[2] }}) - {{ tournament[3] }}
+                                <br>
+                                <small>Status: {{ tournament[4] }}</small>
+                            </div>
+                            <form method="GET" action="{{ url_for('tournament_details', tournament_id=tournament[0]) }}" style="display: inline;">
+                                <button class="small-button" type="submit">Details</button>
+                            </form>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>You are not playing in any tournaments.</p>
+            {% endif %}
+            <h2>Join a New Tournament</h2>
+            <p>Use the text box below to join a new tournament by entering its 6-digit code:</p>
+            <input id="tournamentCodeInput" type="text" maxlength="6" placeholder="Enter 6-digit code" oninput="validateCodeInput()" style="width: 100%; padding: 10px; margin-bottom: 10px; font-size: 1em;">
+            <form method="POST" action="{{ url_for('join_tournament') }}">
+                <input type="hidden" name="tournament_code" id="tournamentCodeHidden">
+                <button id="enterButton" class="large-button" type="submit" disabled>Enter</button>
+            </form>
+        </section>
+                        
+        <!-- Hosting Tournaments Section -->
+        <section id="hostingTournaments" style="display: none;">
+            <h2>Hosting Tournaments</h2>
+            {% if hosting_tournaments %}
+                <ul>
+                    {% for tournament in hosting_tournaments %}
+                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #444;">
+                            <div>
+                                <strong>{{ tournament[1] }}</strong> ({{ tournament[2] }}) - {{ tournament[3] }}
+                                <br>
+                                <small>Status: {{ tournament[4] }}</small>
+                                <p style="margin: 5px 0;"><strong>Code:</strong> {{ tournament[5] }}</p>
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <!-- Delete Button -->
+                                <form method="POST" action="{{ url_for('delete_tournament', tournament_id=tournament[0]) }}" style="display: inline;">
+                                    <button class="small-button danger" type="submit" onclick="return confirm('Are you sure you want to delete this tournament?')">Delete</button>
+                                </form>                                
+                                <!-- Start Button -->
+                                {% if tournament[4] != "Ongoing" %}
+                                    <form method="POST" action="{{ url_for('start_tournament', tournament_id=tournament[0]) }}" style="display: inline;">
+                                        <button class="small-button" type="submit" onclick="return confirm('Are you sure you want to start this tournament?')">Start</button>
+                                    </form>
+                                {% endif %}
+                                <!-- Details Button -->
+                                <form method="GET" action="{{ url_for('tournament_details', tournament_id=tournament[0]) }}" style="display: inline;">
+                                    <button class="small-button" type="submit">Details</button>
+                                </form>
+                            </div>                            
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>You are not hosting any tournaments.</p>
+            {% endif %}
+            <h2>Create a New Tournament</h2>
+            <p>Use the button below to start creating a new tournament:</p>
+            <button class="large-button" onclick="toggleSection('style')">Create Tournament</button>
+        </section>
+
+        <!-- Tournament Style Selection Section -->
+        <section id="tournamentStyle" style="display: none;">
+            <h2>Select Tournament Style</h2>
+            <button id="leagueButton" class="large-button style-button" onclick="selectTournamentStyle('league')">League</button>
+            <button id="knockoutButton" class="large-button style-button" onclick="selectTournamentStyle('knockout')">Knockout</button>
+            <div>
+                <button id="nextStyle" style="width: 400px; margin-left: 180px; height: 50px" onclick="toggleSection('gameMode')" disabled>Next</button>
+            </div>
+        </section>
+
+        <!-- Game Mode Selection Section -->
+        <section id="gameMode" style="display: none;">
+            <h2>Select Game Mode</h2>
+            <button id="301Button" class="large-button game-mode-button" onclick="selectGameMode('301')">301</button>
+            <button id="501Button" class="large-button game-mode-button" onclick="selectGameMode('501')">501</button>
+            <button id="701Button" class="large-button game-mode-button" onclick="selectGameMode('701')">701</button>
+            <button id="nextGameMode" style="width: 400px; margin-left: 180px; height: 50px" onclick="toggleSection('name')" disabled>Next</button>
+        </section>
+
+        <!-- Tournament Name Section -->
+        <section id="tournamentName" style="display: none;">
+            <h2>Enter Tournament Name</h2>
+            <input id="tournamentNameInput" type="text" placeholder="Tournament Name" oninput="validateTournamentName()" style="width: 100%; padding: 10px; margin-bottom: 10px; font-size: 1em;">
+            <button id="nextName" style="width: 400px; margin-left: 180px; height: 50px" onclick="showDetails()" disabled>Next</button>
+        </section>
+
+        <!-- Tournament Details Section -->
+        <section id="tournamentDetails" style="display: none;">
+            <h2>Tournament Details</h2>
+            <p><strong>Name:</strong> <span id="selectedName"></span></p>
+            <p><strong>Style:</strong> <span id="selectedStyle"></span></p>
+            <p><strong>Game Mode:</strong> <span id="selectedGameMode"></span></p>
+            <form method="POST" action="{{ url_for('create_tournament') }}">
+                <input type="hidden" name="name" id="finalName">
+                <input type="hidden" name="style" id="finalStyle">
+                <input type="hidden" name="game_mode" id="finalGameMode">
+                <button type="submit" class="large-button">Finalize</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game - TripleOut</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .section {
+            display: none; /* Hide all sections by default */
+            padding: 20px;
+        }
+
+        .section.active {
+            display: block; /* Show the active section */
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: flex-end; /* Align Next button to the right */
+            margin-top: 20px;
+        }
+
+        .nav-buttons button {
+            background-color: #5a5dff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .nav-buttons button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Selected button styling */
+        .button-group button.selected,
+        .zero-row button.selected {
+            background-color: #4CAF50; /* Green background for selected button */
+            color: white;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 buttons per row */
+            gap: 10px; /* Add space between buttons */
+            margin-bottom: 20px;
+        }
+
+        .zero-row {
+            display: flex;
+            justify-content: center; /* Center the zero button on its own row */
+            margin-top: 10px;
+        }
+
+        .button-group button,
+        .zero-row button {
+            padding: 10px; /* Smaller buttons */
+            font-size: 14px; /* Smaller font size */
+            border-radius: 5px;
+            border: 1px solid #ccc; /* Add border */
+            cursor: pointer;
+        }
+
+        .gameplay-area {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid #5a5dff;
+            border-radius: 8px;
+        }
+
+        .score-display {
+            display: flex;
+            justify-content: space-between;
+            background-color: #5a5dff; /* Match button color */
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white; /* Ensure text is visible */
+            margin-bottom: 20px;
+        }
+
+        body {
+            padding-bottom: 100px; /* Add empty space at the bottom of the page */
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="{{ url_for('home') }}" class="back-button" style="height: 30px; margin-left: 5px; margin-top:10px ;text-decoration: none;">
+            Home
+        </a>
+        <h1>Play Game</h1>
+        <p>Navigate through the sections to set up and play your game!</p>
+    </header>
+    <main>
+        <!-- Game Mode Selection Section -->
+        <section id="gameModeSection" class="section active">
+            <h2>Step 1: Select Game Mode</h2>
+            <div class="button-group">
+                <button onclick="selectButton(this, 'gameMode', '301')">301</button>
+                <button onclick="selectButton(this, 'gameMode', '501')">501</button>
+                <button onclick="selectButton(this, 'gameMode', '701')">701</button>
+            </div>
+            <p id="gameModeValidation" class="validation-message" style="color: red; display: none;">Please select a game mode to continue.</p>
+        </section>
+
+        <!-- Opponent Selection Section -->
+        <section id="opponentSection" class="section">
+            <h2>Step 2: Select Opponent</h2>
+            <div class="button-group">
+                <button onclick="selectButton(this, 'opponent', 'split-screen')">Split Screen</button>
+                <button onclick="selectButton(this, 'opponent', 'easy-bot')">Easy Bot</button>
+                <button onclick="selectButton(this, 'opponent', 'medium-bot')">Medium Bot</button>
+                <button onclick="selectButton(this, 'opponent', 'hard-bot')">Hard Bot</button>
+            </div>
+        
+            <!-- Username Input for User Opponent -->
+            <h3>Play Against Another User</h3>
+            <input 
+                id="opponentUsername" 
+                type="text" 
+                placeholder="Enter Opponent's Username" 
+                oninput="validateOpponentInput()" 
+                style="width: 100%; padding: 10px; border: 1px solid #444; background-color: #222; color: white; border-radius: 4px; font-size: 1em;"
+            >
+            <p id="usernameValidationMessage" style="color: red; display: none;">Username does not exist.</p>
+            <button 
+                id="submitOpponentButton" 
+                class="large-button" 
+                onclick="setOpponentUsername()" 
+                style="margin-top: 10px;" 
+                disabled
+            >
+                Submit
+            </button>
+        
+            <p id="opponentValidation" class="validation-message" style="color: red; display: none;">Please select an opponent to continue.</p>
+        </section>                        
+
+        <!-- Gameplay Section -->
+        <section id="gameSection" class="section">
+            <h2>Step 3: Play Game</h2>
+            <div class="score-display">
+                <div id="playerScoreDisplay">Player Score: 301</div>
+                <div id="opponentScoreDisplay">Opponent Score: 301</div>
+            </div>
+            <div class="gameplay-area">
+                <div id="gameStatus">Game is starting... Player 1's turn!</div>
+                <h3>Select Points</h3>
+                <div class="button-group" id="pointsGroup">
+                    <!-- Buttons for points 1-20 -->
+                    <script>
+                        for (let i = 1; i <= 20; i++) {
+                            document.write(`<button onclick="selectPoints(this, ${i})">${i}</button>`);
+                        }
+                    </script>
+                </div>
+                <div class="zero-row">
+                    <button onclick="selectPoints(this, 0)">0</button>
+                </div>
+
+                <h3>Select Multiplier</h3>
+                <div class="button-group" id="multiplierGroup">
+                    <button onclick="selectButton(this, 'multiplier', 'Single')">Single</button>
+                    <button onclick="selectButton(this, 'multiplier', 'Double')">Double</button>
+                    <button onclick="selectButton(this, 'multiplier', 'Triple')">Triple</button>
+                </div>
+                <button class="nav-buttons" onclick="submitScore()">Submit Score</button>
+            </div>
+        </section>
+
+        <!-- Navigation Buttons -->
+        <div class="nav-buttons">
+            <button id="prevButton" onclick="navigate(-1)" disabled>Previous</button>
+            <button id="nextButton" onclick="navigate(1)">Next</button>
+        </div>
+    </main>
+    <script>
+        let currentSectionIndex = 0; // Track the active section index
+        const sections = document.querySelectorAll('.section'); // All sections
+        const selections = {}; // Store selections for game mode, opponent, and gameplay
+        let playerScore = 301; // Default score for Player
+        let opponentScore = 301; // Default score for Opponent
+        let currentTurn = 'Player'; // Track whose turn it is: 'Player' or 'Opponent'
+        let turnSubmissions = 0; // Track number of scores submitted in the current turn
+        let gameOver = false; // Track if the game is over
+    
+        const botSkillLevels = {
+            'easy-bot': 0.5,   // 50% chance of hitting intended score
+            'medium-bot': 0.75, // 75% chance of hitting intended score
+            'hard-bot': 0.9     // 90% chance of hitting intended score
+        };
+    
+        // Add usernames passed from the backend as a JSON array
+        const existingUsernames = JSON.parse('{{ usernames | tojson | safe }}');
+    
+        function navigate(direction) {
+            const currentSection = sections[currentSectionIndex];
+            if (direction === 1 && !validateSection(currentSection.id)) return;
+
+            // Hide the current section and update the index
+            currentSection.classList.remove('active');
+            currentSectionIndex += direction;
+            sections[currentSectionIndex].classList.add('active');
+
+            // Enable or disable navigation buttons
+            document.getElementById('nextButton').disabled = currentSectionIndex === sections.length - 1;
+            document.getElementById('prevButton').disabled = currentSectionIndex === 0;
+
+            // Initialize gameplay if entering the game section
+            if (currentSectionIndex === 2) initializeGame();
+        }
+
+    
+        function validateSection(sectionId) {
+            if (sectionId === 'gameModeSection' && !selections.gameMode) {
+                document.getElementById('gameModeValidation').style.display = 'block';
+                return false;
+            }
+    
+            if (sectionId === 'opponentSection' && !selections.opponent) {
+                document.getElementById('opponentValidation').style.display = 'block';
+                return false;
+            }
+    
+            document.getElementById('gameModeValidation').style.display = 'none';
+            document.getElementById('opponentValidation').style.display = 'none';
+            return true;
+        }
+    
+        function selectPoints(button, value) {
+            if (value === 0) {
+                const allPointButtons = document.querySelectorAll('#pointsGroup button');
+                allPointButtons.forEach(btn => btn.classList.remove('selected'));
+            } else {
+                const zeroButton = document.querySelector('.zero-row button');
+                zeroButton.classList.remove('selected');
+            }
+    
+            const buttons = button.parentElement.querySelectorAll('button');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            selections.points = value;
+    
+            if (value === 0) {
+                selections.multiplier = null;
+                document.querySelectorAll('#multiplierGroup button').forEach(btn => btn.classList.remove('selected'));
+            }
+    
+            console.log(`Selected points: ${value}`);
+        }
+    
+        function selectButton(button, category, value) {
+            const buttons = button.parentElement.querySelectorAll('button');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            selections[category] = value;
+    
+            if (category === 'gameMode') {
+                playerScore = opponentScore = parseInt(value);
+                document.getElementById('playerScoreDisplay').textContent = `Player Score: ${playerScore}`;
+                document.getElementById('opponentScoreDisplay').textContent = `Opponent Score: ${opponentScore}`;
+            }
+    
+            console.log(`Selected ${category}: ${value}`);
+        }
+    
+        function initializeGame() {
+            document.getElementById('gameStatus').textContent = `${currentTurn}'s turn!`;
+        }
+    
+        function submitScore() {
+            if (gameOver) return alert("The game is over. Reload to play again!");
+            
+            if (currentTurn === 'Player') {
+                playerTurn();
+            }else if (selections.opponent === 'split-screen' || selections.opponent.startsWith('user-')) {
+                playerTurn(); // Both split-screen and user-opponent share the same logic 
+            }else if (['easy-bot', 'medium-bot', 'hard-bot'].includes(selections.opponent) && currentTurn === 'Opponent') {
+                simulateBotTurn();
+            }
+        }
+
+        function playerTurn() {
+            if (selections.points === undefined || (selections.points !== 0 && !selections.multiplier)) {
+                alert("Please select a point and multiplier.");
+                return;
+            }
+    
+            const multiplierValue = selections.multiplier === "Single" ? 1 :
+                                    selections.multiplier === "Double" ? 2 : 3;
+            const scoredPoints = selections.points === 0 ? 0 : selections.points * multiplierValue;
+    
+            processTurn(scoredPoints);
+        }
+    
+        function simulateBotTurn() {
+            const skill = botSkillLevels[selections.opponent];
+
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    if (gameOver || currentTurn !== 'Opponent') return;
+
+                    const intendedScore = Math.floor(Math.random() * 20 + 1); // Random score between 1-20
+                    const multiplier = Math.random() < 0.33 ? 1 : Math.random() < 0.66 ? 2 : 3; // Random multiplier
+                    const actualScore = Math.random() < skill ? intendedScore * multiplier : 0;
+
+                    console.log(`Bot intended to score ${intendedScore * multiplier}, actual score: ${actualScore}`);
+                    processTurn(actualScore, i === 2); // Mark last bot submission to switch turns
+                }, i * 1000); // Delay to simulate thinking
+            }
+        }
+
+
+
+        function processTurn(scoredPoints, isLastSubmission = false) {
+            const remainingScore =
+                currentTurn === 'Player' ? playerScore - scoredPoints : opponentScore - scoredPoints;
+
+            if (remainingScore < 0) {
+                document.getElementById('gameStatus').textContent = `${currentTurn} scored 0 points as scoring ${scoredPoints} would exceed their score.`;
+            } else {
+                if (currentTurn === 'Player') {
+                    playerScore = remainingScore;
+                    document.getElementById('playerScoreDisplay').textContent = `Player Score: ${playerScore}`;
+                } else {
+                    opponentScore = remainingScore;
+                    document.getElementById('opponentScoreDisplay').textContent = `Opponent Score: ${opponentScore}`;
+                }
+
+                document.getElementById('gameStatus').textContent = `${currentTurn} scored ${scoredPoints} points!`;
+
+                // Update user stats for the current player
+                if (currentTurn === 'Player') {
+                    fetch('/update_stats', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            points_scored: scoredPoints,
+                            darts_thrown: 1, // Assuming 1 dart per submission
+                        }),
+                    }).then(response => response.json())
+                        .then(data => {
+                            console.log('Stats updated:', data);
+                        })
+                        .catch(error => {
+                            console.error('Error updating stats:', error);
+                        });
+                }
+            }
+
+            if (playerScore === 0 || opponentScore === 0) {
+                declareWinner();
+            } else if (isLastSubmission || ++turnSubmissions >= 3) {
+                switchTurn(); // Switch the turn after 3 submissions
+            }
+        }
+
+
+        function switchTurn() {
+            turnSubmissions = 0; // Reset submission count
+            currentTurn = currentTurn === 'Player' ? 'Opponent' : 'Player'; // Toggle turn
+
+            document.getElementById('gameStatus').textContent = `${currentTurn === 'Player' ? 'Player 1' : 'Opponent'}'s turn!`;
+
+            if (currentTurn === 'Opponent' && ['easy-bot', 'medium-bot', 'hard-bot'].includes(selections.opponent)) {
+                simulateBotTurn(); // Trigger bot's turn immediately
+            }
+        }
+
+        function declareWinner() {
+            gameOver = true;
+            const winner = playerScore === 0 ? 'Player' : 'Opponent';
+            const gameStatus = document.getElementById('gameStatus');
+
+            gameStatus.textContent = `${winner} wins!`;
+
+            // Apply styles based on the winner
+            gameStatus.style.fontSize = '3em';
+            gameStatus.style.fontWeight = 'bold';
+            gameStatus.style.textAlign = 'center';
+            gameStatus.style.marginTop = '50px';
+            gameStatus.classList.add('win-message');
+
+            if (winner === 'Player') {
+                gameStatus.style.color = '#4CAF50'; // Green for player win
+            } else {
+                gameStatus.style.color = '#E74C3C'; // Red for opponent/bot win
+            }
+        }
+
+        function validateOpponentInput() {
+            const input = document.getElementById('opponentUsername').value.trim();
+            const button = document.getElementById('submitOpponentButton');
+            const isValid = existingUsernames.includes(input);
+    
+            button.disabled = input.length === 0 || !isValid;
+    
+            const validationMessage = document.getElementById('usernameValidationMessage');
+            if (input.length > 0 && !isValid) {
+                validationMessage.style.display = 'block';
+                validationMessage.textContent = 'Username does not exist.';
+            } else {
+                validationMessage.style.display = 'none';
+            }
+        }
+    
+        function setOpponentUsername() {
+            const username = document.getElementById('opponentUsername').value.trim();
+            if (username.length > 0 && existingUsernames.includes(username)) {
+                selections.opponent = `user-${username}`;
+                console.log(`Opponent set to: ${selections.opponent}`);
+                document.getElementById('opponentValidation').style.display = 'none';
+                navigate(1);
+            }
+        }
+    </script>                  
+</body>
+</html>

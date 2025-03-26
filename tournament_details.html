@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ tournament[0] }} - Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function validateWinnerInput() {
+            const winnerInput = document.getElementById('winnerInput');
+            const finishButton = document.getElementById('finishButton');
+            const participants = JSON.parse('{{ participants | tojson | safe }}');
+
+            if (participants.some(participant => participant[0] === winnerInput.value.trim())) {
+                finishButton.disabled = false;
+            } else {
+                finishButton.disabled = true;
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <a href="{{ url_for('tournaments') }}" class="back-button" style="height: 30px; margin-left: 5px; margin-top:10px ;text-decoration: none;">
+            Tournaments
+        </a>
+        <h1>{{ tournament[0] }}</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Tournament Details</h2>
+            <p><strong>Name:</strong> {{ tournament[0] }}</p>
+            <p><strong>Style:</strong> {{ tournament[1] }}</p>
+            <p><strong>Game Mode:</strong> {{ tournament[2] }}</p>
+            <p><strong>Status:</strong> {{ tournament[3] }}</p>
+            <p><strong>Code:</strong> {{ tournament[4] }}</p>
+        </section>
+
+        <section>
+            <h2>Matches</h2>
+            {% if matches %}
+                {% set current_round = None %}
+                <ul style="list-style: none; padding: 0;">
+                    {% for match in matches %}
+                        {% if current_round != match[0] %}
+                            {% if current_round is not none %}
+                                </ul>
+                            {% endif %}
+                            <h3>Round {{ match[0] }}</h3>
+                            <ul>
+                        {% endif %}
+                        <li style="padding: 10px; border-bottom: 1px solid #444;">
+                            <strong>Match {{ match[1] }}:</strong> 
+                            {{ match[2] or 'Bye' }} vs {{ match[3] or 'Bye' }} =
+                            <input type="text" placeholder="Winner" style="width: 120px; padding:5px; border: 1px solid #444; background-color: #222; color: white; border-radius: 4px; font-size: 0.9em;">
+                            {% if 'Match' in match[2] or 'Match' in match[3] %}
+                                <div style="margin-top: 5px; display: flex; gap: 10px;">
+                                    <input type="text" placeholder="Player" style="width: 120px; padding: 5px; border: 1px solid #444; background-color: #222; color: white; border-radius: 4px; font-size: 0.9em;">
+                                    <span style="align-self: center;">vs.</span>
+                                    <input type="text" placeholder="Player" style="width: 120px; padding: 5px; border: 1px solid #444; background-color: #222; color: white; border-radius: 4px; font-size: 0.9em;">
+                                </div>
+                            {% endif %}
+                        </li>
+                        {% set current_round = match[0] %}
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No matches available.</p>
+            {% endif %}
+        </section>
+        
+        <!-- Winner Section -->
+        <section style="margin-top: 20px;">
+            <h2>Winner</h2>
+            <p>Enter the tournament winner:</p>
+            <form method="POST" action="{{ url_for('delete_tournament', tournament_id=tournament_id) }}">
+                <input 
+                    id="winnerInput" 
+                    name="winner" 
+                    type="text" 
+                    placeholder="Winner's Name" 
+                    style="width: 100%; padding: 10px; border: 1px solid #444; background-color: #222; color: white; border-radius: 4px; font-size: 1em;" 
+                    oninput="validateWinnerInput()"
+                >
+                <button 
+                    id="finishButton" 
+                    class="large-button" 
+                    style="margin-top: 10px;" 
+                    disabled
+                >Finish</button>
+            </form>            
+        </section>                       
+                                
+        <section>
+            <h2>Participants</h2>
+            {% if participants %}
+                <ul style="list-style: none; padding: 0;">
+                    {% for participant in participants %}
+                        <li style="padding: 10px; border-bottom: 1px solid #444;">
+                            <strong>{{ participant[0] }}</strong>
+                            <br>
+                            <small>{{ participant[1] }}</small>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No participants have signed up for this tournament yet.</p>
+            {% endif %}
+        </section>      
+    </main>
+</body>
+</html>

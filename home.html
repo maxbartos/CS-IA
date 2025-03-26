@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - TripleOut</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+        function confirmLogout(event) {
+            if (!confirm("Are you sure you want to log out?")) {
+                event.preventDefault();
+            }
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Welcome to TripleOut</h1>
+        <p>Track your darts scores, join tournaments, and improve your game.</p>
+    </header>
+
+    <nav class="navbar">
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('profile') }}">Your Profile</a>
+        <a href="{{ url_for('game') }}">Play Game</a>
+        <a href="{{ url_for('tournaments') }}">Tournaments</a>
+        <a href="{{ url_for('logout') }}" onclick="confirmLogout(event)">Log Out</a>
+    </nav>
+
+    <main>
+        <section>
+            <h2>About TripleOut</h2>
+            <p>This app lets you track your darts games and personal scores, join tournaments, and view statistics to improve your performance.</p>
+        </section>
+
+        <section>
+            <h2>Features</h2>
+            <ul>
+                <li>Personalized scoring and statistics</li>
+                <li>Tournament mode with game join/leave options</li>
+                <li>Supports multiple game modes like 301, 501</li>
+            </ul>
+        </section>
+    </main>
+</body>
+</html>
